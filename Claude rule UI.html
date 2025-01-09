@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Shipping Rules Management</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen">
+        <nav class="bg-white shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <h1 class="text-xl font-semibold text-gray-900">Shipping Rules Management</h1>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-medium mb-6" id="formTitle">Create New Rule</h2>
+                
+                <form id="ruleForm" class="space-y-6">
+                    <input type="hidden" id="editIndex" value="-1">
+                    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Ship Options</label>
+                            <select id="shipOptions" multiple class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <option value="standard">Standard</option>
+                                <option value="express">Express</option>
+                                <option value="priority">Priority</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Carriers</label>
+                            <select id="carriers" multiple class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <option value="fedex">FedEx</option>
+                                <option value="ups">UPS</option>
+                                <option value="usps">USPS</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Weight Range</label>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <input type="number" id="weightMin" placeholder="Min" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <input type="number" id="weightMax" placeholder="Max" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Discount Type</label>
+                            <select id="discountType" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <option value="percentage">Percentage of List Price</option>
+                                <option value="fixed">Fixed Rate</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Discount Value</label>
+                            <div class="mt-1 relative rounded-md shadow-sm">
+                                <input type="number" step="0.01" id="discountValue" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <span id="discountSymbol" class="text-gray-500 sm:text-sm">%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" id="cancelEdit" class="hidden inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Cancel
+                        </button>
+                        <button type="submit" id="submitButton" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Add Rule
+                        </button>
+                    </div>
+                </form>
+
+                <div class="mt-8">
+                    <h2 class="text-lg font-medium mb-4">Existing Rules</h2>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ship Options</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Carriers</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Weight Range</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discount</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rulesTable" class="bg-white divide-y divide-gray-200">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let rules = [];
+        let editingIndex = -1;
+
+        $(document).ready(function() {
+            $('#shipOptions, #carriers').select2({
+                placeholder: "Select options",
+                allowClear: true
+            });
+
+            $('#discountType').on('change', function() {
+                const symbol = $(this).val() === 'percentage' ? '%' : '$';
+                $('#discountSymbol').text(symbol);
+            });
+
+            function validateRule(newRule, existingRules, skipIndex = -1) {
+                for (let i = 0; i < existingRules.length; i++) {
+                    if (i === skipIndex) continue;
+                    const rule = existingRules[i];
+                    
+                    // Check for exact matches in ship options and carriers
+                    const shipOptionsOverlap = 
+                        (newRule.shipOptions.length === 0 && rule.shipOptions.length === 0) ||
+                        (newRule.shipOptions.some(so => rule.shipOptions.includes(so) || rule.shipOptions.length === 0) ||
+                         rule.shipOptions.some(so => newRule.shipOptions.includes(so) || newRule.shipOptions.length === 0));
+
+                    const carriersOverlap = 
+                        (newRule.carriers.length === 0 && rule.carriers.length === 0) ||
+                        (newRule.carriers.some(c => rule.carriers.includes(c) || rule.carriers.length === 0) ||
+                         rule.carriers.some(c => newRule.carriers.includes(c) || newRule.carriers.length === 0));
+
+                    // Check for overlapping weight ranges
+                    const weightOverlap = (
+                        (newRule.weightMin === null && rule.weightMin === null) ||
+                        (newRule.weightMax === null && rule.weightMax === null) ||
+                        (newRule.weightMin <= rule.weightMax && newRule.weightMax >= rule.weightMin)
+                    );
+
+                    if (shipOptionsOverlap && carriersOverlap && weightOverlap) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            function resetForm() {
+                $('#ruleForm')[0].reset();
+                $('#shipOptions, #carriers').val(null).trigger('change');
+                $('#editIndex').val(-1);
+                editingIndex = -1;
+                $('#formTitle').text('Create New Rule');
+                $('#submitButton').text('Add Rule');
+                $('#cancelEdit').addClass('hidden');
+                $('#discountSymbol').text('%');
+            }
+
+            function fillFormForEdit(rule, index) {
+                $('#shipOptions').val(rule.shipOptions).trigger('change');
+                $('#carriers').val(rule.carriers).trigger('change');
+                $('#weightMin').val(rule.weightMin);
+                $('#weightMax').val(rule.weightMax);
+                $('#discountType').val(rule.discountType).trigger('change');
+                $('#discountValue').val(rule.discountValue);
+                $('#editIndex').val(index);
+                editingIndex = index;
+                $('#formTitle').text('Edit Rule');
+                $('#submitButton').text('Update Rule');
+                $('#cancelEdit').removeClass('hidden');
+            }
+
+            $('#cancelEdit').click(function() {
+                resetForm();
+            });
+
+            $('#ruleForm').on('submit', function(e) {
+                e.preventDefault();
+
+                const newRule = {
+                    shipOptions: $('#shipOptions').val() || [],
+                    carriers: $('#carriers').val() || [],
+                    weightMin: $('#weightMin').val() ? parseFloat($('#weightMin').val()) : null,
+                    weightMax: $('#weightMax').val() ? parseFloat($('#weightMax').val()) : null,
+                    discountType: $('#discountType').val(),
+                    discountValue: parseFloat($('#discountValue').val())
+                };
+
+                const editIndex = parseInt($('#editIndex').val());
+
+                if (!validateRule(newRule, rules, editIndex)) {
+                    alert('This rule conflicts with an existing rule. Please modify the parameters.');
+                    return;
+                }
+
+                if (editIndex >= 0) {
+                    rules[editIndex] = newRule;
+                } else {
+                    rules.push(newRule);
+                }
+
+                updateTable();
+                resetForm();
+            });
+
+            function updateTable() {
+                const tbody = $('#rulesTable');
+                tbody.empty();
+
+                rules.forEach((rule, index) => {
+                    const row = $('<tr>');
+                    row.append($('<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">').text(rule.shipOptions.length ? rule.shipOptions.join(', ') : 'Any'));
+                    row.append($('<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">').text(rule.carriers.length ? rule.carriers.join(', ') : 'Any'));
+                    
+                    const weightRange = rule.weightMin === null && rule.weightMax === null ? 
+                        'Any' : 
+                        `${rule.weightMin || 0} - ${rule.weightMax || '∞'} ounces`;
+                    row.append($('<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">').text(weightRange));
+
+                    const discount = rule.discountType === 'percentage' ? 
+                        `${rule.discountValue}% of list price` : 
+                        `$${rule.discountValue.toFixed(2)}`;
+                    row.append($('<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">').text(discount));
+
+                    const actionsCell = $('<td class="px-6 py-4 whitespace-nowrap text-sm space-x-3">');
+                    
+                    const editButton = $('<button class="text-indigo-600 hover:text-indigo-900">Edit</button>')
+                        .click(() => {
+                            fillFormForEdit(rule, index);
+                        });
+                    
+                    const deleteButton = $('<button class="text-red-600 hover:text-red-900">Delete</button>')
+                        .click(() => {
+                            if (confirm('Are you sure you want to delete this rule?')) {
+                                rules.splice(index, 1);
+                                updateTable();
+                            }
+                        });
+
+                    actionsCell.append(editButton, deleteButton);
+                    row.append(actionsCell);
+
+                    tbody.append(row);
+                });
+            }
+
+            // Initialize the table
+            updateTable();
+        });
+    </script>
+</body>
+</html>
